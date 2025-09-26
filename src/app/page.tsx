@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { posthog } from '@/lib/posthog'
 
 // Inline minimal components
 function PostItNote({ children, rotation = 0, color = 'yellow', className = '', style = {} }: {
@@ -73,6 +74,14 @@ function EmailCapture({ source, placeholder = "Enter your email", buttonText = "
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Track email submission event
+    posthog.capture('email_submitted', {
+      source: source,
+      email: email,
+      form_location: source === 'hero' ? 'Hero Section' : source === 'footer' ? 'Footer Section' : 'Other'
+    })
+
     setIsSubmitted(true)
     setEmail('')
   }
@@ -111,6 +120,11 @@ function EmailCapture({ source, placeholder = "Enter your email", buttonText = "
 }
 
 export default function HomePage() {
+  // Track page interactions
+  const trackInteraction = (event: string, properties: any = {}) => {
+    posthog.capture(event, properties)
+  }
+
   return (
     <main className="min-h-screen bg-yellow-50 text-gray-800">
       {/* Hero Section */}
@@ -150,7 +164,10 @@ export default function HomePage() {
       <section className="px-6 py-12 max-w-4xl mx-auto">
         <div className="relative">
           <div className="border-2 border-dashed border-gray-300 p-8 bg-yellow-50 transform rotate-1">
-            <div className="aspect-video bg-gray-200 rounded-lg flex items-center justify-center relative">
+            <div
+              className="aspect-video bg-gray-200 rounded-lg flex items-center justify-center relative cursor-pointer hover:bg-gray-300 transition-colors"
+              onClick={() => trackInteraction('demo_video_clicked', { section: 'product_demo' })}
+            >
               <div className="text-center">
                 <div className="text-6xl mb-4">▶️</div>
                 <p className="text-xl font-semibold">Product Demo</p>

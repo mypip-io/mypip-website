@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { PostHogProvider, PostHogPageView } from '@/lib/posthog'
+import { Suspense } from 'react'
 
 export const metadata: Metadata = {
   title: 'MyPip - Stop Playing SDR Roulette',
@@ -14,7 +16,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-yellow-50 text-gray-800">
-        {children}
+        <PostHogProvider>
+          <Suspense fallback={null}>
+            <PostHogPageView />
+          </Suspense>
+          {children}
+        </PostHogProvider>
       </body>
     </html>
   )
