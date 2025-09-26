@@ -1,8 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { sanityClient } from '@/sanity/config'
-import { posthog } from '@/lib/posthog'
 
 interface EmailCaptureProps {
   source: 'hero' | 'footer' | 'blog'
@@ -28,21 +26,8 @@ export default function EmailCapture({
     setError('')
 
     try {
-      // Track with PostHog
-      posthog.capture('email_captured', {
-        source,
-        email,
-      })
-
-      // Save to Sanity
-      await sanityClient.create({
-        _type: 'email',
-        email,
-        source,
-        subscribedAt: new Date().toISOString(),
-        ipAddress: '', // Would be populated server-side in production
-        userAgent: navigator.userAgent,
-      })
+      // For now, just simulate success - we'll add backend later
+      await new Promise(resolve => setTimeout(resolve, 1000))
 
       setIsSubmitted(true)
       setEmail('')

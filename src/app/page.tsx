@@ -71,19 +71,56 @@ function EmailCapture({ source, placeholder = "Enter your email", buttonText = "
 }) {
   const [email, setEmail] = useState('')
   const [isSubmitted, setIsSubmitted] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState('')
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setIsSubmitting(true)
+    setError('')
 
-    // Track email submission event
-    posthog.capture('email_submitted', {
-      source: source,
-      email: email,
-      form_location: source === 'hero' ? 'Hero Section' : source === 'footer' ? 'Footer Section' : 'Other'
-    })
+    try {
+      // Get additional tracking data
+      const utmParams = new URLSearchParams(window.location.search)
 
-    setIsSubmitted(true)
-    setEmail('')
+      // Submit to API route
+      const response = await fetch('/api/emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          source,
+          utmSource: utmParams.get('utm_source') || '',
+          utmMedium: utmParams.get('utm_medium') || '',
+          utmCampaign: utmParams.get('utm_campaign') || '',
+          referrer: document.referrer || '',
+          userAgent: navigator.userAgent,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to submit email')
+      }
+
+      // Track email submission event
+      posthog.capture('email_submitted', {
+        source: source,
+        email: email,
+        form_location: source === 'hero' ? 'Hero Section' : source === 'footer' ? 'Footer Section' : 'Other'
+      })
+
+      setIsSubmitted(true)
+      setEmail('')
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong. Please try again.')
+      console.error('Email submission error:', err)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   if (isSubmitted) {
@@ -109,12 +146,17 @@ function EmailCapture({ source, placeholder = "Enter your email", buttonText = "
         />
         <button
           type="submit"
-          disabled={!email}
-          className="px-6 py-3 bg-blue-900 text-white font-semibold hover:bg-blue-800 disabled:opacity-50"
+          disabled={isSubmitting || !email}
+          className="px-6 py-3 bg-blue-900 text-white font-semibold hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {buttonText}
+          {isSubmitting ? 'Submitting...' : buttonText}
         </button>
       </div>
+      {error && (
+        <div className="text-red-600 text-sm italic mt-2">
+          {error}
+        </div>
+      )}
     </form>
   )
 }
@@ -433,12 +475,20 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="px-6 py-12 border-t-2 border-dashed border-ink-blue/20">
+      <footer className="px-6 py-12 border-t-2 border-dashed border-gray-300">
         <div className="max-w-4xl mx-auto text-center">
-          <div className="italic text-gray-800/60">
+          <div className="mb-6">
+            <a
+              href="/blog"
+              className="inline-block border-2 border-dashed border-gray-400 px-4 py-2 bg-yellow-200 hover:bg-yellow-300 transform hover:rotate-1 transition-all"
+            >
+              📝 Read Our Blog
+            </a>
+          </div>
+          <div className="italic text-gray-500">
             Built by founders, for founders. Because we get it.
           </div>
-          <div className="mt-4 text-xs text-gray-800/40">
+          <div className="mt-4 text-xs text-gray-400">
             © 2024 MyPip. Stop playing SDR roulette.
           </div>
         </div>

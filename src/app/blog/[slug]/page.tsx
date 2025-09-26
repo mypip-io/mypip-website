@@ -1,68 +1,162 @@
-import { sanityClient } from '@/sanity/config'
-import { BlogPost } from '@/types'
+import { sanityFetch, urlFor } from '@/lib/sanity'
+import { PortableText } from '@portabletext/react'
+import Image from 'next/image'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import EmailCapture from '@/components/EmailCapture'
-import HandwrittenAnnotation from '@/components/HandwrittenAnnotation'
-import PostItNote from '@/components/PostItNote'
 
-interface BlogPostPageProps {
-  params: Promise<{
-    slug: string
-  }>
+interface BlogPost {
+  _id: string
+  title: string
+  slug: { current: string }
+  excerpt: string
+  mainImage?: {
+    asset: any
+    alt: string
+  }
+  content: any[]
+  author: string
+  publishedAt: string
+  tags?: string[]
+  seo?: {
+    metaTitle?: string
+    metaDescription?: string
+  }
+}
+
+interface PageProps {
+  params: Promise<{ slug: string }>
 }
 
 async function getBlogPost(slug: string): Promise<BlogPost | null> {
-  const query = `
-    *[_type == "blogPost" && slug.current == $slug][0] {
-      _id,
-      title,
-      slug,
-      excerpt,
-      content,
-      publishedAt,
-      tags,
-      metaDescription,
-      featuredImage {
-        asset->{
-          _ref,
-          _type
-        },
-        alt
-      }
-    }
-  `
-
   try {
-    return await sanityClient.fetch(query, { slug })
+    return await sanityFetch<BlogPost>(`
+      *[_type == "blogPost" && slug.current == $slug][0] {
+        _id,
+        title,
+        slug,
+        excerpt,
+        mainImage {
+          asset,
+          alt
+        },
+        content,
+        author,
+        publishedAt,
+        tags,
+        seo
+      }
+    `, { slug })
   } catch (error) {
     console.error('Error fetching blog post:', error)
     return null
   }
 }
 
-export async function generateMetadata({ params }: BlogPostPageProps) {
+export async function generateMetadata({ params }: PageProps) {
   const { slug } = await params
   const post = await getBlogPost(slug)
 
   if (!post) {
     return {
-      title: 'Post Not Found - MyPip Blog',
+      title: 'Post Not Found | MyPip Blog',
     }
   }
 
   return {
-    title: `${post.title} - MyPip Blog`,
-    description: post.metaDescription || post.excerpt || 'Read the latest from MyPip',
+    title: post.seo?.metaTitle || `${post.title} | MyPip Blog`,
+    description: post.seo?.metaDescription || post.excerpt,
     openGraph: {
       title: post.title,
-      description: post.metaDescription || post.excerpt,
+      description: post.excerpt,
       type: 'article',
       publishedTime: post.publishedAt,
+      authors: [post.author],
+      images: post.mainImage ? [
+        {
+          url: urlFor(post.mainImage.asset).width(1200).height(630).url(),
+          width: 1200,
+          height: 630,
+          alt: post.mainImage.alt,
+        }
+      ] : [],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: post.title,
+      description: post.excerpt,
+      images: post.mainImage ? [urlFor(post.mainImage.asset).width(1200).height(630).url()] : [],
     },
   }
 }
 
-export default async function BlogPostPage({ params }: BlogPostPageProps) {
+const portableTextComponents = {
+  types: {
+    image: ({ value }: any) => (
+      <div className="my-8">
+        <Image
+          src={urlFor(value).width(800).height(400).url()}
+          alt={value.alt || 'Blog image'}
+          width={800}
+          height={400}
+          className="w-full h-auto rounded-lg border-2 border-dashed border-gray-300"
+        />
+        {value.alt && (
+          <p className="text-sm text-gray-600 italic mt-2 text-center">
+            {value.alt}
+          </p>
+        )}
+      </div>
+    ),
+  },
+  block: {
+    h1: ({ children }: any) => (
+      <h1 className="text-3xl font-bold mb-6 mt-8">{children}</h1>
+    ),
+    h2: ({ children }: any) => (
+      <h2 className="text-2xl font-bold mb-4 mt-6">{children}</h2>
+    ),
+    h3: ({ children }: any) => (
+      <h3 className="text-xl font-bold mb-3 mt-5">{children}</h3>
+    ),
+    blockquote: ({ children }: any) => (
+      <blockquote className="border-l-4 border-yellow-400 pl-4 my-6 italic bg-yellow-50 py-2">
+        {children}
+      </blockquote>
+    ),
+    normal: ({ children }: any) => (
+      <p className="mb-4 leading-relaxed">{children}</p>
+    ),
+  },
+  list: {
+    bullet: ({ children }: any) => (
+      <ul className="list-disc list-inside mb-4 space-y-2">{children}</ul>
+    ),
+    number: ({ children }: any) => (
+      <ol className="list-decimal list-inside mb-4 space-y-2">{children}</ol>
+    ),
+  },
+  marks: {
+    strong: ({ children }: any) => <strong className="font-bold">{children}</strong>,
+    em: ({ children }: any) => <em className="italic">{children}</em>,
+    code: ({ children }: any) => (
+      <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono">
+        {children}
+      </code>
+    ),
+    link: ({ value, children }: any) => (
+      <a
+        href={value.href}
+        className="text-blue-600 hover:text-blue-800 underline"
+        target={value.href.startsWith('http') ? '_blank' : '_self'}
+        rel={value.href.startsWith('http') ? 'noopener noreferrer' : ''}
+      >
+        {children}
+      </a>
+    ),
+  },
+}
+
+export default async function BlogPostPage({ params }: PageProps) {
   const { slug } = await params
   const post = await getBlogPost(slug)
 
@@ -71,67 +165,105 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   }
 
   return (
-    <main className="min-h-screen px-6 py-16">
-      <article className="max-w-3xl mx-auto">
-        <div className="relative mb-12">
-          <h1 className="text-3xl md:text-4xl font-bold mb-6">
-            {post.title}
-          </h1>
-
-          <div className="flex items-center justify-between text-sm text-ink-blue/60 mb-8">
-            <time dateTime={post.publishedAt}>
-              {new Date(post.publishedAt).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
-            </time>
-
-            {post.tags && post.tags.length > 0 && (
-              <div className="flex gap-2">
-                {post.tags.map((tag) => (
-                  <span key={tag} className="handwritten bg-postit-yellow px-2 py-1 rounded text-xs">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <HandwrittenAnnotation position="top-right" className="hidden md:block">
-            Great read!
-          </HandwrittenAnnotation>
+    <main className="min-h-screen bg-yellow-50 text-gray-800">
+      <article className="px-6 py-16 max-w-4xl mx-auto">
+        {/* Back to Blog */}
+        <div className="mb-8">
+          <Link
+            href="/blog"
+            className="inline-block border-2 border-dashed border-gray-400 px-4 py-2 bg-yellow-200 hover:bg-yellow-300 transform hover:-rotate-1 transition-all text-sm"
+          >
+            ← Back to Blog
+          </Link>
         </div>
 
-        {post.featuredImage && (
-          <div className="w-full h-64 md:h-96 bg-gray-200 rounded-lg mb-12"></div>
-        )}
+        {/* Article Header */}
+        <header className="mb-12">
+          <div className="border-2 border-dashed border-gray-300 p-8 bg-yellow-100 transform rotate-1">
+            <h1 className="text-3xl md:text-5xl font-bold mb-6 leading-tight">
+              {post.title}
+            </h1>
 
-        <div className="prose prose-lg max-w-none">
-          {/* This would be where Sanity's PortableText component would render the content */}
-          <div className="dashed-border p-6 bg-notebook-cream/30">
-            <p className="handwritten text-center text-ink-blue/60">
-              Blog post content would be rendered here using Sanity's PortableText component
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
+              <div className="mb-4 md:mb-0">
+                <time className="text-gray-600 italic">
+                  Published on {new Date(post.publishedAt).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </time>
+                <p className="text-gray-700">by {post.author}</p>
+              </div>
+
+              {post.tags && post.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {post.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="bg-gray-200 px-3 py-1 text-sm rounded transform hover:rotate-1 transition-transform"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <p className="text-lg text-gray-700 leading-relaxed">
+              {post.excerpt}
             </p>
           </div>
-        </div>
+        </header>
 
-        {/* Newsletter signup */}
-        <div className="mt-16 text-center">
-          <PostItNote rotation={-1} color="green" className="inline-block mb-8">
-            <div className="text-center">
-              <div className="font-bold mb-2">Liked this post?</div>
-              <div className="text-sm">Get more sales insights in your inbox</div>
+        {/* Main Image */}
+        {post.mainImage && (
+          <div className="mb-12">
+            <div className="border-2 border-dashed border-gray-300 p-4 bg-white transform -rotate-1">
+              <Image
+                src={urlFor(post.mainImage.asset).width(1200).height(600).url()}
+                alt={post.mainImage.alt}
+                width={1200}
+                height={600}
+                className="w-full h-auto rounded"
+                priority
+              />
+              {post.mainImage.alt && (
+                <p className="text-sm text-gray-600 italic mt-3 text-center">
+                  {post.mainImage.alt}
+                </p>
+              )}
             </div>
-          </PostItNote>
+          </div>
+        )}
 
-          <EmailCapture
-            source="blog"
-            placeholder="your.email@company.com"
-            buttonText="Subscribe to Newsletter"
-            className="max-w-lg mx-auto"
-          />
+        {/* Article Content */}
+        <div className="prose prose-lg max-w-none">
+          <div className="border-2 border-dashed border-gray-300 p-8 bg-white">
+            <PortableText
+              value={post.content}
+              components={portableTextComponents}
+            />
+          </div>
         </div>
+
+        {/* Article Footer */}
+        <footer className="mt-12 pt-8 border-t-2 border-dashed border-gray-300">
+          <div className="text-center">
+            <div className="border-2 border-dashed border-gray-400 p-6 bg-yellow-200 transform rotate-1 inline-block">
+              <h3 className="text-xl font-bold mb-3">Enjoyed this article?</h3>
+              <p className="text-gray-700 mb-4">
+                Get more insights on sales development and lead generation.
+              </p>
+              <Link
+                href="/#hero"
+                className="bg-blue-900 text-white px-6 py-3 font-semibold hover:bg-blue-800 transform hover:rotate-1 transition-all inline-block"
+              >
+                Get Started with MyPip
+              </Link>
+            </div>
+          </div>
+        </footer>
       </article>
     </main>
   )
