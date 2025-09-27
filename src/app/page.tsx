@@ -3,6 +3,9 @@ import { sanityFetch } from '@/sanity/lib/live'
 import { defaultContent } from '@/lib/sanity-queries'
 import HomePage from '@/components/HomePage'
 
+// Force dynamic rendering for live content
+export const dynamic = 'force-dynamic'
+
 // Server component to fetch data
 export default async function Page() {
   // Fetch content from Sanity using live API
