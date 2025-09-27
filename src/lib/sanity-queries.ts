@@ -1,4 +1,4 @@
-import { sanityFetch } from '@/sanity/lib/live'
+import { sanityClient } from './sanity'
 
 // Landing Page Queries
 export async function getLandingPageContent() {
@@ -80,8 +80,8 @@ export async function getLandingPageContent() {
   }`
 
   try {
-    const { data } = await sanityFetch({ query })
-    return data
+    const content = await sanityClient.fetch(query)
+    return content
   } catch (error) {
     console.error('Error fetching landing page content:', error)
     return null
@@ -161,8 +161,8 @@ export async function getSiteSettings() {
   }`
 
   try {
-    const { data } = await sanityFetch({ query })
-    return data
+    const settings = await sanityClient.fetch(query)
+    return settings
   } catch (error) {
     console.error('Error fetching site settings:', error)
     return null
@@ -256,8 +256,8 @@ export async function getPageBySlug(slug: string) {
   }`
 
   try {
-    const { data } = await sanityFetch({ query, params: { slug } })
-    return data
+    const page = await sanityClient.fetch(query, { slug })
+    return page
   } catch (error) {
     console.error('Error fetching page:', error)
     return null
@@ -275,8 +275,8 @@ export async function getAllPages() {
   }`
 
   try {
-    const { data } = await sanityFetch({ query })
-    return data
+    const pages = await sanityClient.fetch(query)
+    return pages
   } catch (error) {
     console.error('Error fetching pages:', error)
     return []
@@ -317,8 +317,8 @@ export async function getAllBlogPosts() {
   }`
 
   try {
-    const { data } = await sanityFetch({ query })
-    return data
+    const posts = await sanityClient.fetch(query)
+    return posts
   } catch (error) {
     console.error('Error fetching blog posts:', error)
     return []
@@ -366,8 +366,8 @@ export async function getBlogPostBySlug(slug: string) {
   }`
 
   try {
-    const { data } = await sanityFetch({ query, params: { slug } })
-    return data
+    const post = await sanityClient.fetch(query, { slug })
+    return post
   } catch (error) {
     console.error('Error fetching blog post:', error)
     return null
@@ -396,8 +396,8 @@ export async function getFeaturedBlogPosts(limit: number = 3) {
   }`
 
   try {
-    const { data } = await sanityFetch({ query, params: { limit: limit - 1 } })
-    return data
+    const posts = await sanityClient.fetch(query, { limit: limit - 1 })
+    return posts
   } catch (error) {
     console.error('Error fetching featured blog posts:', error)
     return []
@@ -416,8 +416,8 @@ export async function getNewsletterSignups() {
   }`
 
   try {
-    const { data } = await sanityFetch({ query })
-    return data
+    const signups = await sanityClient.fetch(query)
+    return signups
   } catch (error) {
     console.error('Error fetching newsletter signups:', error)
     return []
