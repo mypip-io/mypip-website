@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { PostHogProvider, PostHogPageView } from '@/lib/posthog'
+import { SanityLive } from '@/sanity/lib/live'
 import { Suspense } from 'react'
 
 export const metadata: Metadata = {
@@ -21,6 +22,7 @@ export default function RootLayout({
             <PostHogPageView />
           </Suspense>
           {children}
+          <SanityLive />
         </PostHogProvider>
       </body>
     </html>
