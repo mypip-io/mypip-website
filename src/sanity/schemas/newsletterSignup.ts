@@ -1,6 +1,6 @@
-export const emailSchema = {
-  name: 'email',
-  title: 'Email Submission',
+export const newsletterSignupSchema = {
+  name: 'newsletterSignup',
+  title: 'Newsletter Signup',
   type: 'document',
   fields: [
     {

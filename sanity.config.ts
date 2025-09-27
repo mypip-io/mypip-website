@@ -3,8 +3,11 @@ import { structureTool } from 'sanity/structure'
 import { visionTool } from '@sanity/vision'
 import { colorInput } from '@sanity/color-input'
 
-import { emailSchema } from './src/sanity/schemas/email'
+import { newsletterSignupSchema } from './src/sanity/schemas/newsletterSignup'
 import { blogPostSchema } from './src/sanity/schemas/blogPost'
+import { landingPageSchema } from './src/sanity/schemas/landingPage'
+import { siteSettingsSchema } from './src/sanity/schemas/siteSettings'
+import { pageSchema } from './src/sanity/schemas/page'
 
 const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID!
 const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET!
@@ -22,24 +25,51 @@ export default defineConfig({
         S.list()
           .title('MyPip Content')
           .items([
-            // Email Submissions Section
+            // Site Configuration
             S.listItem()
-              .title('📧 Email Submissions')
+              .title('⚙️ Site Settings')
               .child(
-                S.documentTypeList('email')
-                  .title('Email Submissions')
-                  .defaultOrdering([{ field: 'subscribedAt', direction: 'desc' }])
+                S.document()
+                  .schemaType('siteSettings')
+                  .documentId('siteSettings')
               ),
 
             S.divider(),
 
-            // Blog Content Section
+            // Content Management
+            S.listItem()
+              .title('🏠 Landing Page')
+              .child(
+                S.document()
+                  .schemaType('landingPage')
+                  .documentId('landingPage')
+              ),
+
+            S.listItem()
+              .title('📄 Pages')
+              .child(
+                S.documentTypeList('page')
+                  .title('Pages')
+                  .defaultOrdering([{ field: 'pageType', direction: 'asc' }])
+              ),
+
             S.listItem()
               .title('📝 Blog Posts')
               .child(
                 S.documentTypeList('blogPost')
                   .title('Blog Posts')
                   .defaultOrdering([{ field: 'publishedAt', direction: 'desc' }])
+              ),
+
+            S.divider(),
+
+            // User Engagement
+            S.listItem()
+              .title('📧 Newsletter Signups')
+              .child(
+                S.documentTypeList('newsletterSignup')
+                  .title('Newsletter Signups')
+                  .defaultOrdering([{ field: 'subscribedAt', direction: 'desc' }])
               ),
 
             S.divider(),
@@ -52,11 +82,11 @@ export default defineConfig({
                   .title('Analytics')
                   .items([
                     S.listItem()
-                      .title('Email Sources')
+                      .title('Signup Sources')
                       .child(
-                        S.documentTypeList('email')
-                          .title('Emails by Source')
-                          .filter('_type == "email"')
+                        S.documentTypeList('newsletterSignup')
+                          .title('Signups by Source')
+                          .filter('_type == "newsletterSignup"')
                           .defaultOrdering([{ field: 'source', direction: 'asc' }])
                       ),
                     S.listItem()
@@ -67,6 +97,14 @@ export default defineConfig({
                           .filter('_type == "blogPost" && featured == true')
                           .defaultOrdering([{ field: 'publishedAt', direction: 'desc' }])
                       ),
+                    S.listItem()
+                      .title('Published Pages')
+                      .child(
+                        S.documentTypeList('page')
+                          .title('Published Pages')
+                          .filter('_type == "page" && isActive == true')
+                          .defaultOrdering([{ field: '_updatedAt', direction: 'desc' }])
+                      ),
                   ])
               ),
           ])
@@ -76,7 +114,13 @@ export default defineConfig({
   ],
 
   schema: {
-    types: [emailSchema, blogPostSchema],
+    types: [
+      siteSettingsSchema,
+      landingPageSchema,
+      pageSchema,
+      blogPostSchema,
+      newsletterSignupSchema,
+    ],
   },
 
   document: {

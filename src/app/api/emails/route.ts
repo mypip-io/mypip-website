@@ -27,9 +27,9 @@ export async function POST(request: NextRequest) {
     const forwarded = request.headers.get('x-forwarded-for')
     const ip = forwarded ? forwarded.split(',')[0] : request.headers.get('x-real-ip') || 'unknown'
 
-    // Create the email document in Sanity
+    // Create the newsletter signup document in Sanity
     const emailDoc = {
-      _type: 'email',
+      _type: 'newsletterSignup',
       email,
       source,
       subscribedAt: new Date().toISOString(),

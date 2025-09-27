@@ -1,39 +1,8 @@
-import { sanityFetch } from '@/lib/sanity'
+import { getAllBlogPosts, getImageUrl } from '@/lib/sanity-queries'
 import Link from 'next/link'
 
-interface BlogPost {
-  _id: string
-  title: string
-  slug: { current: string }
-  excerpt: string
-  publishedAt: string
-  author: string
-  featured: boolean
-  tags?: string[]
-}
-
-async function getBlogPosts(): Promise<BlogPost[]> {
-  try {
-    return await sanityFetch<BlogPost[]>(`
-      *[_type == "blogPost"] | order(publishedAt desc) {
-        _id,
-        title,
-        slug,
-        excerpt,
-        publishedAt,
-        author,
-        featured,
-        tags
-      }
-    `)
-  } catch (error) {
-    console.error('Error fetching blog posts:', error)
-    return []
-  }
-}
-
 export default async function BlogPage() {
-  const posts = await getBlogPosts()
+  const posts = await getAllBlogPosts()
 
   return (
     <main className="min-h-screen bg-yellow-50 text-gray-800">
@@ -63,7 +32,7 @@ export default async function BlogPage() {
           </div>
         ) : (
           <div className="grid gap-8">
-            {posts.map((post, index) => (
+            {posts.map((post: any, index: number) => (
               <article
                 key={post._id}
                 className={`border-2 border-dashed border-gray-300 p-6 bg-yellow-100 transform ${
@@ -81,7 +50,7 @@ export default async function BlogPage() {
                       {new Date(post.publishedAt).toLocaleDateString()}
                     </time>
                   </div>
-                  <span className="text-sm text-gray-600">by {post.author}</span>
+                  <span className="text-sm text-gray-600">by {post.author?.name || 'Anonymous'}</span>
                 </div>
 
                 <h2 className="text-2xl font-bold mb-3 hover:text-blue-600">
@@ -96,7 +65,7 @@ export default async function BlogPage() {
 
                 {post.tags && post.tags.length > 0 && (
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {post.tags.map((tag) => (
+                    {post.tags.map((tag: string) => (
                       <span
                         key={tag}
                         className="bg-gray-200 px-2 py-1 text-xs rounded transform hover:rotate-1 transition-transform"

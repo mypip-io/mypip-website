@@ -5,11 +5,11 @@ export default defineCliConfig({
     projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || 'your-project-id',
     dataset: process.env.NEXT_PUBLIC_SANITY_DATASET || 'production',
   },
-  /**
-   * Enable auto-updates for studios.
-   * When set to `false`, you'll need to update manually or use `sanity update`.
-   */
-  autoUpdates: true,
+
+  deployment: {
+    appId: 'u5wvk73wi6qinbxgiqiftdyw',
+    autoUpdates: true,
+  },
 
   studioHost: 'mypip-cms', // This will create mypip-cms.sanity.studio
 })

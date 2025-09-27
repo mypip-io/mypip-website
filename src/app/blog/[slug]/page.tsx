@@ -1,60 +1,16 @@
-import { sanityFetch, urlFor } from '@/lib/sanity'
+import { getBlogPostBySlug, getImageUrl } from '@/lib/sanity-queries'
 import { PortableText } from '@portabletext/react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
-interface BlogPost {
-  _id: string
-  title: string
-  slug: { current: string }
-  excerpt: string
-  mainImage?: {
-    asset: any
-    alt: string
-  }
-  content: any[]
-  author: string
-  publishedAt: string
-  tags?: string[]
-  seo?: {
-    metaTitle?: string
-    metaDescription?: string
-  }
-}
-
 interface PageProps {
   params: Promise<{ slug: string }>
 }
 
-async function getBlogPost(slug: string): Promise<BlogPost | null> {
-  try {
-    return await sanityFetch<BlogPost>(`
-      *[_type == "blogPost" && slug.current == $slug][0] {
-        _id,
-        title,
-        slug,
-        excerpt,
-        mainImage {
-          asset,
-          alt
-        },
-        content,
-        author,
-        publishedAt,
-        tags,
-        seo
-      }
-    `, { slug })
-  } catch (error) {
-    console.error('Error fetching blog post:', error)
-    return null
-  }
-}
-
 export async function generateMetadata({ params }: PageProps) {
   const { slug } = await params
-  const post = await getBlogPost(slug)
+  const post = await getBlogPostBySlug(slug)
 
   if (!post) {
     return {
@@ -63,20 +19,20 @@ export async function generateMetadata({ params }: PageProps) {
   }
 
   return {
-    title: post.seo?.metaTitle || `${post.title} | MyPip Blog`,
-    description: post.seo?.metaDescription || post.excerpt,
+    title: post.seoTitle || `${post.title} | MyPip Blog`,
+    description: post.seoDescription || post.excerpt,
     openGraph: {
       title: post.title,
       description: post.excerpt,
       type: 'article',
       publishedTime: post.publishedAt,
-      authors: [post.author],
+      authors: [post.author?.name || 'Anonymous'],
       images: post.mainImage ? [
         {
-          url: urlFor(post.mainImage.asset).width(1200).height(630).url(),
+          url: getImageUrl(post.mainImage, 1200, 630) || '',
           width: 1200,
           height: 630,
-          alt: post.mainImage.alt,
+          alt: post.title,
         }
       ] : [],
     },
@@ -84,7 +40,7 @@ export async function generateMetadata({ params }: PageProps) {
       card: 'summary_large_image',
       title: post.title,
       description: post.excerpt,
-      images: post.mainImage ? [urlFor(post.mainImage.asset).width(1200).height(630).url()] : [],
+      images: post.mainImage ? [getImageUrl(post.mainImage, 1200, 630) || ''] : [],
     },
   }
 }
@@ -94,7 +50,7 @@ const portableTextComponents = {
     image: ({ value }: any) => (
       <div className="my-8">
         <Image
-          src={urlFor(value).width(800).height(400).url()}
+          src={getImageUrl(value, 800, 400) || ''}
           alt={value.alt || 'Blog image'}
           width={800}
           height={400}
@@ -158,7 +114,7 @@ const portableTextComponents = {
 
 export default async function BlogPostPage({ params }: PageProps) {
   const { slug } = await params
-  const post = await getBlogPost(slug)
+  const post = await getBlogPostBySlug(slug)
 
   if (!post) {
     notFound()
@@ -193,12 +149,12 @@ export default async function BlogPostPage({ params }: PageProps) {
                     day: 'numeric'
                   })}
                 </time>
-                <p className="text-gray-700">by {post.author}</p>
+                <p className="text-gray-700">by {post.author?.name || 'Anonymous'}</p>
               </div>
 
               {post.tags && post.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {post.tags.map((tag) => (
+                  {post.tags.map((tag: string) => (
                     <span
                       key={tag}
                       className="bg-gray-200 px-3 py-1 text-sm rounded transform hover:rotate-1 transition-transform"
@@ -221,18 +177,13 @@ export default async function BlogPostPage({ params }: PageProps) {
           <div className="mb-12">
             <div className="border-2 border-dashed border-gray-300 p-4 bg-white transform -rotate-1">
               <Image
-                src={urlFor(post.mainImage.asset).width(1200).height(600).url()}
-                alt={post.mainImage.alt}
+                src={getImageUrl(post.mainImage, 1200, 600) || ''}
+                alt={post.title}
                 width={1200}
                 height={600}
                 className="w-full h-auto rounded"
                 priority
               />
-              {post.mainImage.alt && (
-                <p className="text-sm text-gray-600 italic mt-3 text-center">
-                  {post.mainImage.alt}
-                </p>
-              )}
             </div>
           </div>
         )}
