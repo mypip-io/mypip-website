@@ -9,8 +9,8 @@ import { landingPageSchema } from './src/sanity/schemas/landingPage'
 import { siteSettingsSchema } from './src/sanity/schemas/siteSettings'
 import { pageSchema } from './src/sanity/schemas/page'
 
-const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID!
-const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET!
+const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || 'ytwzdwc8'
+const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || 'production'
 
 export default defineConfig({
   name: 'mypip-studio',
